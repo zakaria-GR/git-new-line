@@ -1,6 +1,9 @@
-#include "get_next_line_bonus.h"
+#include "get_next_line.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-static count(char *str)
+static countToNewLine(char *str)
 {
 	int i = 0;
 	while (str[i] != '\n' && str[i] != '\0')
@@ -52,8 +55,12 @@ char	*ft_substr(char const *s, unsigned int start, size_t len)
 int	findnline(char *s)
 {
 	int i = 0;
-	while (s[i] == '\n')
-		return 1;
+	while (s[i] != '\0')
+	{
+		if (s[i] == '\n')
+			return 1;
+		i++;
+	}
 	return 0;
 }
 
@@ -81,41 +88,61 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	return (s3);
 }
 
+
 char *get_next_line(int fd)
 {
 	int			i;
-	static int	y;
+	int			y;
 	static char	buff[BUFFER_SIZE];
 	char		*line;
 	static char	*leftover;
+
+	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0))
+		return (NULL);
 
 	if (leftover == NULL)
 	{
 		leftover = malloc(1);
 			leftover[0] = '\0';
 	}
-	if (findnline(leftover))
+	while (findnline(leftover))
 	{
-		while (leftover != '\n')
-		{
-			line[i] = leftover[i];
-			i++;
-		}
+		y = countToNewLine(leftover);
+		line = ft_substr(leftover, 0, y+1);
+		i = ft_strlen(leftover);
+		leftover = ft_substr(leftover, y+1, i);
 		return line;
 	}
-	read(fd, buff, BUFFER_SIZE);
-	y = count(buff);
-	line = ft_substr(buff, i, y);
-	leftover = malloc(BUFFER_SIZE - y);
-	i = 0;
-	line = ft_strjoin(leftover, buff);
-	return (line);
+	while (!findnline(leftover))
+	{
+		int z = read(fd, buff, BUFFER_SIZE);
+		if (z == 0 && leftover[0] == '\0')
+			return NULL;
+		leftover = ft_strjoin(leftover, buff);
+		if (findnline(leftover))
+		{
+			y = countToNewLine(leftover);//count until \n and stops before it
+			line = ft_substr(leftover, 0, y+1);
+			i = ft_strlen(leftover);
+			leftover = ft_substr(leftover, y+1, i);
+			return (line);
+		}
+		if (z == 0 && !findnline(leftover))
+		{
+			y = ft_strlen(leftover);
+			line = ft_substr(leftover, 0, y);
+			return (line);
+		}
+	}
 }
 
 int main()
 {
 	int fd = open("test.txt", O_RDONLY);
-	printf("%s", get_next_line(fd));
-	//printf("%s", get_next_line(fd));
-	//printf("%s", get_next_line(fd));
+	int i=0;
+	while (i<4)
+	{
+		printf("%s", get_next_line(fd));
+		i++;
+	}
 }
