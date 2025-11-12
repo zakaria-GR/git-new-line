@@ -116,21 +116,22 @@ char *get_next_line(int fd)
 	while (!findnline(leftover))
 	{
 		int z = read(fd, buff, BUFFER_SIZE);
-		if (z == 0 && !leftover)
+		if (leftover[0] != '\0' && z == 0)
+		{
+			y = ft_strlen(leftover);
+			line = ft_substr(leftover, 0, y);
+			leftover = ft_substr(leftover, 0, 0);
+			return (line);
+		}
+		if (z == 0)
 			return NULL;
 		leftover = ft_strjoin(leftover, buff);
-		if (findnline(leftover))
+		if (findnline(leftover) && z != 0)
 		{
 			y = countToNewLine(leftover);//count until \n and stops before it
 			line = ft_substr(leftover, 0, y);
 			i = ft_strlen(leftover);
 			leftover = ft_substr(leftover, y, i);
-			return (line);
-		}
-		if (leftover[0] != '\0')
-		{
-			y = ft_strlen(leftover);
-			line = ft_substr(leftover, 0, y);
 			return (line);
 		}
 	}
@@ -139,10 +140,9 @@ char *get_next_line(int fd)
 int main()
 {
 	int fd = open("test.txt", O_RDONLY);
-	int i=0;
-	while (i<20)
+
+	while (get_next_line(fd))
 	{
 		printf("%s", get_next_line(fd));
-		i++;
 	}
 }
