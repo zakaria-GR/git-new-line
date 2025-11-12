@@ -10,7 +10,7 @@ static countToNewLine(char *str)
 	{
 		i++;
 	}
-	return i;
+	return i+1;
 }
 
 size_t	ft_strlen(const char *str)
@@ -108,26 +108,26 @@ char *get_next_line(int fd)
 	while (findnline(leftover))
 	{
 		y = countToNewLine(leftover);
-		line = ft_substr(leftover, 0, y+1);
+		line = ft_substr(leftover, 0, y);
 		i = ft_strlen(leftover);
-		leftover = ft_substr(leftover, y+1, i);
+		leftover = ft_substr(leftover, y, i);
 		return line;
 	}
 	while (!findnline(leftover))
 	{
 		int z = read(fd, buff, BUFFER_SIZE);
-		if (z == 0 && leftover[0] == '\0')
+		if (z == 0 && !leftover)
 			return NULL;
 		leftover = ft_strjoin(leftover, buff);
 		if (findnline(leftover))
 		{
 			y = countToNewLine(leftover);//count until \n and stops before it
-			line = ft_substr(leftover, 0, y+1);
+			line = ft_substr(leftover, 0, y);
 			i = ft_strlen(leftover);
-			leftover = ft_substr(leftover, y+1, i);
+			leftover = ft_substr(leftover, y, i);
 			return (line);
 		}
-		if (z == 0 && !findnline(leftover))
+		if (leftover[0] != '\0')
 		{
 			y = ft_strlen(leftover);
 			line = ft_substr(leftover, 0, y);
@@ -140,7 +140,7 @@ int main()
 {
 	int fd = open("test.txt", O_RDONLY);
 	int i=0;
-	while (i<4)
+	while (i<20)
 	{
 		printf("%s", get_next_line(fd));
 		i++;
