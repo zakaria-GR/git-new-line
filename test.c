@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static countToNewLine(char *str)
+int countToNewLine(char *str)
 {
 	int i = 0;
 	while (str[i] != '\n' && str[i] != '\0')
 	{
 		i++;
 	}
-	return i+1;
+	return i;
 }
 
 size_t	ft_strlen(const char *str)
@@ -88,7 +88,73 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	return (s3);
 }
 
+void freeLeftover(char *str)
+{
+	char *temp;
+	temp = str;
+	//str = ft_substr(str, y+1, i-y);
+	free(temp);
+	//return temp;
+}
 
+char *get_next_line(int fd)
+{
+	int			found;
+	int			y;
+	char		buff[BUFFER_SIZE];
+	char		*line;
+	static char	*leftover;
+	char		*temp;
+
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+
+	if (leftover == NULL)
+	{
+		leftover = malloc(1);
+		leftover[0] = '\0';
+	}
+	while (!findnline(leftover))
+	{
+		y = read(fd, buff, BUFFER_SIZE);
+		if (y == 0)
+			break;
+		temp = ft_strjoin(leftover, buff);
+		free(leftover);
+	}
+	found = findnline(temp);
+	if (found)
+	{
+		y = countToNewLine(temp);
+		line = ft_substr(temp, 0, y+1);
+		int i = ft_strlen(temp);
+		leftover = ft_substr(temp, y+2, i);
+		free(temp);
+		return line;
+	}
+	if (!found && y != 0 && leftover[0] != '\0')
+	{
+		line = leftover;
+		free(leftover);
+	}
+	if (line)
+		return line;
+	return NULL;
+}
+
+int main()
+{
+	int fd = open("test.txt", O_RDONLY);
+
+	int i = 0;
+	while (i < 2)
+	{
+		printf("%s", get_next_line(fd));
+		i++;
+	}
+}
+
+/*
 char *get_next_line(int fd)
 {
 	int			i;
@@ -110,6 +176,7 @@ char *get_next_line(int fd)
 		y = countToNewLine(leftover);
 		line = ft_substr(leftover, 0, y);
 		i = ft_strlen(leftover);
+		freeLeftover(leftover);
 		leftover = ft_substr(leftover, y, i);
 		return line;
 	}
@@ -131,18 +198,10 @@ char *get_next_line(int fd)
 			y = countToNewLine(leftover);//count until \n and stops before it
 			line = ft_substr(leftover, 0, y);
 			i = ft_strlen(leftover);
+			freeLeftover(leftover);
 			leftover = ft_substr(leftover, y, i);
 			return (line);
 		}
 	}
 }
-
-int main()
-{
-	int fd = open("test.txt", O_RDONLY);
-
-	while (get_next_line(fd))
-	{
-		printf("%s", get_next_line(fd));
-	}
-}
+*/
