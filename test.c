@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 int countToNewLine(char *str)
 {
@@ -45,6 +46,8 @@ char	*ft_substr(char const *s, unsigned int start, size_t len)
 	if (len > (s_len - start))
 		len = s_len - start;
 	str = malloc(len + 1);
+	if (!str)
+		return (NULL);
 	i = 0;
 	while (i < len)
 		str[i++] = s[start++];
@@ -72,9 +75,13 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	size_t	s2_len;
 	char	*s3;
 
+	if (!s1 || !s2)
+		return (NULL);
 	s1_len = ft_strlen(s1);
 	s2_len = ft_strlen(s2);
 	s3 = malloc((s1_len + s2_len + 1) * sizeof(char));
+	if (!s3)
+		return (NULL);
 	i = 0;
 	while (i < s1_len)
 	{
@@ -99,109 +106,75 @@ void freeLeftover(char *str)
 
 char *get_next_line(int fd)
 {
-	int			found;
-	int			y;
-	char		buff[BUFFER_SIZE];
-	char		*line;
-	static char	*leftover;
-	char		*temp;
+	int				found;
+	ssize_t			nb_read;
+	char			buff[BUFFER_SIZE+1];
+	char			*line;
+	static char		*stash;
+	char			*temp;
+	char			*leftover;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
 
-	if (leftover == NULL)
+	if (stash == NULL)
 	{
-		leftover = malloc(1);
-		leftover[0] = '\0';
+		stash = malloc(1);
+		stash[0] = '\0';
 	}
-	while (!findnline(leftover))
+	while (!findnline(stash))
 	{
-		y = read(fd, buff, BUFFER_SIZE);
-		if (y == 0)
+		nb_read = read(fd, buff, BUFFER_SIZE);
+		if (nb_read == 0)
 			break;
-		temp = ft_strjoin(leftover, buff);
-		free(leftover);
+		if (nb_read > 0)
+			buff[nb_read] = '\0';
+		if (nb_read < 0)
+			return (NULL);
+		temp = ft_strjoin(stash, buff);
+		free(stash);
+		stash = temp;
 	}
-	found = findnline(temp);
+	found = findnline(stash);
 	if (found)
 	{
-		y = countToNewLine(temp);
-		line = ft_substr(temp, 0, y+1);
-		int i = ft_strlen(temp);
-		leftover = ft_substr(temp, y+2, i);
-		free(temp);
+		int y = countToNewLine(stash);
+		line = ft_substr(stash, 0, y+1);
+		int i = ft_strlen(stash);
+		leftover = ft_substr(stash, y+1, i);
+		free(stash);
+		stash = leftover;
 		return line;
 	}
-	if (!found && y != 0 && leftover[0] != '\0')
+	if (stash[0] == '\n' && nb_read == 0)
+		return stash;
+	if (stash[0] != '\0')
 	{
-		line = leftover;
-		free(leftover);
-	}
-	if (line)
+		int d = ft_strlen(stash);
+		line = ft_substr(stash, 0, d);
+		free(stash);
+		stash = NULL;
 		return line;
+	}
+	if (nb_read == 0 && stash != NULL)
+	{
+		return stash;
+	}
 	return NULL;
 }
 
 int main()
 {
 	int fd = open("test.txt", O_RDONLY);
-
+	
 	int i = 0;
-	while (i < 2)
+	while (i < 121)
 	{
-		printf("%s", get_next_line(fd));
-		i++;
-	}
-}
-
-/*
-char *get_next_line(int fd)
-{
-	int			i;
-	int			y;
-	static char	buff[BUFFER_SIZE];
-	char		*line;
-	static char	*leftover;
-
-	if (fd < 0 || BUFFER_SIZE <= 0 || read(fd, 0, 0))
-		return (NULL);
-
-	if (leftover == NULL)
-	{
-		leftover = malloc(1);
-			leftover[0] = '\0';
-	}
-	while (findnline(leftover))
-	{
-		y = countToNewLine(leftover);
-		line = ft_substr(leftover, 0, y);
-		i = ft_strlen(leftover);
-		freeLeftover(leftover);
-		leftover = ft_substr(leftover, y, i);
-		return line;
-	}
-	while (!findnline(leftover))
-	{
-		int z = read(fd, buff, BUFFER_SIZE);
-		if (leftover[0] != '\0' && z == 0)
+		char *ptr = get_next_line(fd);
+		if (ptr != NULL)
 		{
-			y = ft_strlen(leftover);
-			line = ft_substr(leftover, 0, y);
-			leftover = ft_substr(leftover, 0, 0);
-			return (line);
-		}
-		if (z == 0)
-			return NULL;
-		leftover = ft_strjoin(leftover, buff);
-		if (findnline(leftover) && z != 0)
-		{
-			y = countToNewLine(leftover);//count until \n and stops before it
-			line = ft_substr(leftover, 0, y);
-			i = ft_strlen(leftover);
-			freeLeftover(leftover);
-			leftover = ft_substr(leftover, y, i);
-			return (line);
+			printf("%s", ptr);
+			i++;
 		}
 	}
 }
-*/
