@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 
 int countToNewLine(char *str)
 {
@@ -104,6 +105,32 @@ void freeLeftover(char *str)
 	//return temp;
 }
 
+void	*ft_calloc(size_t count, size_t size)
+{
+	unsigned char	*temp;
+	size_t			i;
+
+	i = 0;
+	if (count != 0)
+	{
+		if (size > SIZE_MAX / count)
+		{
+			return (NULL);
+		}
+	}
+	temp = (unsigned char *)malloc(count * size);
+	if (!temp)
+	{
+		return (NULL);
+	}
+	while (i < (count * size))
+	{
+		temp[i] = 0;
+		i++;
+	}
+	return (temp);
+}
+
 char *get_next_line(int fd)
 {
 	int				found;
@@ -114,9 +141,9 @@ char *get_next_line(int fd)
 	char			*temp;
 	char			*leftover;
 
+	int i;
 	if (fd < 0 || BUFFER_SIZE <= 0)
 		return (NULL);
-
 	if (stash == NULL)
 	{
 		stash = malloc(1);
@@ -127,54 +154,67 @@ char *get_next_line(int fd)
 		nb_read = read(fd, buff, BUFFER_SIZE);
 		if (nb_read == 0)
 			break;
-		if (nb_read > 0)
-			buff[nb_read] = '\0';
 		if (nb_read < 0)
+		{
+			free(stash);
+			stash = NULL;
 			return (NULL);
-		temp = ft_strjoin(stash, buff);
-		free(stash);
-		stash = temp;
+		}
+		if (nb_read > 0)
+		{
+			buff[nb_read] = '\0';
+			temp = ft_strjoin(stash, buff);
+			free(stash);
+			stash = temp;
+		}
 	}
 	found = findnline(stash);
-	if (found)
+	if (stash != NULL)
 	{
-		int y = countToNewLine(stash);
-		line = ft_substr(stash, 0, y+1);
-		int i = ft_strlen(stash);
-		leftover = ft_substr(stash, y+1, i);
-		free(stash);
-		stash = leftover;
-		return line;
-	}
-	if (stash[0] == '\n' && nb_read == 0)
-		return stash;
-	if (stash[0] != '\0')
-	{
-		int d = ft_strlen(stash);
-		line = ft_substr(stash, 0, d);
-		free(stash);
-		stash = NULL;
-		return line;
-	}
-	if (nb_read == 0 && stash != NULL)
-	{
-		return stash;
+		if (found)
+		{
+			int y = countToNewLine(stash);
+			line = ft_substr(stash, 0, y+1);
+			int i = ft_strlen(stash);
+			leftover = ft_substr(stash, y+1, i - (y+1));
+			free(stash);
+			stash = leftover;
+			return line;
+		}
+		else if (stash[0] != '\0')
+		{
+			i = ft_strlen(stash);
+			line = ft_substr(stash, 0, i);
+			free(stash);
+			stash = NULL;
+			return line;
+		}
+		else if (stash[0] == '\0' && nb_read == 0)
+		{
+			free(stash);
+			stash = NULL;
+			return NULL;
+		}
 	}
 	return NULL;
 }
 
 int main()
 {
-	int fd = open("test.txt", O_RDONLY);
 	
+	int fd = open("test.txt", O_RDONLY);
+	//printf("%s", get_next_line(fd));
+	//printf("%s", get_next_line(fd));
 	int i = 0;
-	while (i < 121)
+	while (i < 8)
 	{
 		char *ptr = get_next_line(fd);
 		if (ptr != NULL)
 		{
 			printf("%s", ptr);
-			i++;
 		}
+		i++;
+		free(ptr);
 	}
+	close(fd);
 }
